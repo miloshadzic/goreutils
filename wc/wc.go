@@ -9,12 +9,24 @@ import (
 	"strings"
 )
 
-var count_words, count_bytes, count_lines bool
+type Score struct {
+	FileName                        string
+	WordCount, LineCount, ByteCount int
+}
+
+func (self *Score) Add(other *Score) *Score {
+	self.WordCount += other.WordCount
+	self.LineCount += other.LineCount
+	self.ByteCount += other.ByteCount
+	return self
+}
+
+var w, l, c bool
 
 func init() {
-	flag.BoolVar(&count_lines, "l", true, "Count the number of lines")
-	flag.BoolVar(&count_words, "w", true, "Count the number of words")
-	flag.BoolVar(&count_bytes, "c", true, "Count the number of bytes")
+	flag.BoolVar(&l, "l", true, "Count the number of lines")
+	flag.BoolVar(&w, "w", true, "Count the number of words")
+	flag.BoolVar(&c, "c", true, "Count the number of bytes")
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: wc [-clmw] file\n\n")
 		flag.VisitAll(usage)
@@ -34,9 +46,6 @@ func words(str *string) int {
 	for scanner.Scan() {
 		count++
 	}
-	if err := scanner.Err(); err != nil {
-		fmt.Fprintln(os.Stderr, "reading input:", err)
-	}
 	return count
 }
 
@@ -49,40 +58,57 @@ func lines(str *string) int {
 	for scanner.Scan() {
 		count++
 	}
-	if err := scanner.Err(); err != nil {
-		fmt.Fprintln(os.Stderr, "reading input:", err)
-	}
 	return count
+}
+
+func count_file(fileName string) *Score {
+	bytes, _ := ioutil.ReadFile(fileName)
+	score := count(bytes)
+	score.FileName = fileName
+	return score
+}
+
+func count(bytes []byte) *Score {
+	str := string(bytes)
+	return &Score{
+		LineCount: lines(&str),
+		WordCount: words(&str),
+		ByteCount: len(bytes)}
+}
+
+func Printout(score *Score) {
+	if !(w && l && c) {
+		fmt.Printf("%d\t%d\t%d ", score.LineCount, score.WordCount, score.ByteCount)
+	} else {
+		if l {
+			fmt.Printf("%d\t ", score.LineCount)
+		}
+		if w {
+			fmt.Printf("%d\t ", score.WordCount)
+		}
+		if c {
+			fmt.Printf("%d\t ", score.ByteCount)
+		}
+		fmt.Printf("%s\n", score.FileName)
+	}
 }
 
 func main() {
 	flag.Parse()
-
-	var bytes []byte
-	var err error
-
-	if len(flag.Args()) == 0 {
-		bytes, err = ioutil.ReadAll(os.Stdin)
+	fileCount := len(flag.Args())
+	var score *Score
+	if fileCount == 1 {
+		score = count_file(flag.Args()[0])
+	} else if fileCount > 1 {
+		score = &Score{WordCount: 0, LineCount: 0, ByteCount: 0, FileName: "total"}
+		for i := 0; i < fileCount; i++ {
+			s := count_file(flag.Args()[i])
+			score.Add(s)
+			Printout(s)
+		}
 	} else {
-		bytes, err = ioutil.ReadFile(flag.Args()[0])
+		bytes, _ := ioutil.ReadAll(os.Stdin)
+		score = count(bytes)
 	}
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "File couldn't be opened.", err)
-	}
-	str := string(bytes)
-	if !(count_words && count_lines && count_bytes) {
-		fmt.Printf("%d\t%d\t%d\n", lines(&str), words(&str), len(bytes))
-		fmt.Println("yeah")
-	} else {
-		if count_lines {
-			fmt.Printf("%d\t", lines(&str))
-		}
-		if count_words {
-			fmt.Printf("%d\t", words(&str))
-		}
-		if count_bytes {
-			fmt.Printf("%d\t", len(bytes))
-		}
-		fmt.Println()
-	}
+	Printout(score)
 }
