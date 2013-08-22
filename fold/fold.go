@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"unicode/utf8"
 )
 
@@ -30,12 +31,15 @@ func fold(b []byte, width int) []byte {
 func main() {
 	flag.Parse()
 	fileCount := len(flag.Args())
+	var input []byte
 	if fileCount > 0 {
 		for i := 0; i < fileCount; i++ {
-			input, _ := ioutil.ReadFile(flag.Args()[i])
-			result := string(fold(input, 80))
-			fmt.Print(result)
+			input, _ = ioutil.ReadFile(flag.Args()[i])
+
 		}
 	} else {
+		input, _ = ioutil.ReadAll(os.Stdin)
 	}
+	result := string(fold(input, 60))
+	fmt.Print(result)
 }
