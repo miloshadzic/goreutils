@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+	"text/tabwriter"
 )
 
 type Score struct {
@@ -77,20 +78,26 @@ func count(bytes []byte) *Score {
 }
 
 func Printout(score *Score) {
+	out := ""
 	if !(w && l && c) {
-		fmt.Printf("%d\t%d\t%d ", score.LineCount, score.WordCount, score.ByteCount)
+		out = fmt.Sprintf("%d\t%d\t%d ", score.LineCount, score.WordCount, score.ByteCount)
 	} else {
 		if l {
-			fmt.Printf("%d\t ", score.LineCount)
+			out = fmt.Sprintf("%d\t ", score.LineCount)
 		}
 		if w {
-			fmt.Printf("%d\t ", score.WordCount)
+			out = fmt.Sprintf("%s%d\t ", out, score.WordCount)
 		}
 		if c {
-			fmt.Printf("%d\t ", score.ByteCount)
+			out = fmt.Sprintf("%s%d\t ", out, score.ByteCount)
 		}
-		fmt.Printf("%s\n", score.FileName)
+		out = fmt.Sprintf("%s%s", out, score.FileName)
 	}
+	w := new(tabwriter.Writer)
+
+	w.Init(os.Stdout, 8, 8, 0, ' ', tabwriter.AlignRight)
+	fmt.Fprintln(w, out)
+	w.Flush()
 }
 
 func main() {
