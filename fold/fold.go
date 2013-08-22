@@ -11,6 +11,20 @@ import (
 
 const ENDL = '\n'
 
+var width int
+
+func init() {
+	flag.IntVar(&width, "w", 80, "Number of characters in a line")
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage: fold [-w width] [file ...]\n\n")
+		flag.VisitAll(usage)
+	}
+}
+
+func usage(f *flag.Flag) {
+	fmt.Printf("  -%s\t%s\n", f.Name, f.Usage)
+}
+
 func fold(b []byte, width int) []byte {
 	runes := bytes.Runes(b)
 	if len(runes) < width {
@@ -40,6 +54,6 @@ func main() {
 	} else {
 		input, _ = ioutil.ReadAll(os.Stdin)
 	}
-	result := string(fold(input, 60))
+	result := string(fold(input, width))
 	fmt.Print(result)
 }
