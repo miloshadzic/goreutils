@@ -9,5 +9,5 @@ to static linking. They are also a bit slower but still plenty fast.
 
 For now there's only:
 
-+ ``wc`` - with only multibyte counting missing (as far as I know).
++ ``wc``
 + ``fold`` - only the -w flag is implemented.

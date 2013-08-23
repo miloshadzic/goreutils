@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -11,25 +12,27 @@ import (
 )
 
 type Score struct {
-	FileName                        string
-	WordCount, LineCount, ByteCount int
+	WordCount, LineCount, CharCount, ByteCount int
+	FileName                                   string
 }
 
 func (self *Score) Add(other *Score) *Score {
 	self.WordCount += other.WordCount
 	self.LineCount += other.LineCount
+	self.CharCount += other.CharCount
 	self.ByteCount += other.ByteCount
 	return self
 }
 
-var w, l, c bool
+var w, l, m, c bool
 
 func init() {
-	flag.BoolVar(&l, "l", true, "Count the number of lines")
-	flag.BoolVar(&w, "w", true, "Count the number of words")
-	flag.BoolVar(&c, "c", true, "Count the number of bytes")
+	flag.BoolVar(&l, "l", false, "Count the number of lines")
+	flag.BoolVar(&w, "w", false, "Count the number of words")
+	flag.BoolVar(&c, "c", false, "Count the number of bytes")
+	flag.BoolVar(&m, "m", false, "Count the number of characters")
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: wc [-clmw] file\n\n")
+		fmt.Fprintf(os.Stderr, "Usage: wc [-clmw] [file ...]\n\n")
 		flag.VisitAll(usage)
 	}
 }
@@ -40,9 +43,8 @@ func usage(f *flag.Flag) {
 
 func words(str *string) int {
 	scanner := bufio.NewScanner(strings.NewReader(*str))
-	// Set the split function for the scanning operation.
 	scanner.Split(bufio.ScanWords)
-	// Count the words.
+
 	count := 0
 	for scanner.Scan() {
 		count++
@@ -69,29 +71,34 @@ func count_file(fileName string) *Score {
 	return score
 }
 
-func count(bytes []byte) *Score {
-	str := string(bytes)
+func count(b []byte) *Score {
+	str := string(b)
 	return &Score{
 		LineCount: lines(&str),
 		WordCount: words(&str),
-		ByteCount: len(bytes)}
+		CharCount: len(bytes.Runes(b)),
+		ByteCount: len(b)}
 }
 
 func Printout(score *Score) {
-	out := ""
-	if !(w && l && c) {
-		out = fmt.Sprintf("%d\t%d\t%d ", score.LineCount, score.WordCount, score.ByteCount)
+	var out string
+	if !(l || w || c || m) {
+		out = fmt.Sprintf("%d\t%d\t%d\t %s",
+			score.LineCount, score.WordCount, score.ByteCount, score.FileName)
 	} else {
 		if l {
-			out = fmt.Sprintf("%d\t ", score.LineCount)
+			out = fmt.Sprintf("%d\t", score.LineCount)
 		}
 		if w {
-			out = fmt.Sprintf("%s%d\t ", out, score.WordCount)
+			out = fmt.Sprintf("%s%d\t", out, score.WordCount)
 		}
-		if c {
-			out = fmt.Sprintf("%s%d\t ", out, score.ByteCount)
+		if m {
+			out = fmt.Sprintf("%s%d\t", out, score.CharCount)
 		}
-		out = fmt.Sprintf("%s%s", out, score.FileName)
+		if c && !m {
+			out = fmt.Sprintf("%s%d\t", out, score.ByteCount)
+		}
+		out = fmt.Sprintf("%s %s", out, score.FileName)
 	}
 	w := new(tabwriter.Writer)
 
