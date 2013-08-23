@@ -118,4 +118,5 @@ func main() {
 		score = count(bytes)
 	}
 	Printout(score)
+	os.Exit(0)
 }

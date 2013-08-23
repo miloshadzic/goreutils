@@ -56,4 +56,5 @@ func main() {
 	}
 	result := string(fold(input, width))
 	fmt.Print(result)
+	os.Exit(0)
 }
